@@ -65,6 +65,6 @@ We welcome contributors! Follow these steps to clone the repository, set up your
 
 ### 1. Clone the Repository
 ```
-git clone https://github.com/Blackeye6941/pypath.git
+git clone https://github.com/Blackeye6941/PyPath.git
 cd pyai-academy
 ```
