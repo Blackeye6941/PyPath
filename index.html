@@ -183,10 +183,10 @@
 <div id="api-modal">
   <div class="modal-box">
     <div style="font-size:26px;margin-bottom:10px">🔑</div>
-    <div class="modal-title">Enter your Gemini API Key</div>
-    <div class="modal-sub">PyPath uses Google Gemini to generate personalized lessons and answer your questions. Your key stays in your browser only.</div>
-    <input class="modal-input" id="api-key-input" type="password" placeholder="AIza..." autocomplete="off">
-    <div class="modal-note">Get a free key at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> → Get API Key</div>
+    <div class="modal-title">Enter your Groq API Key</div>
+    <div class="modal-sub">PyPath uses Groq to generate personalized lessons and answer your questions. Your key stays in your browser only.</div>
+    <input class="modal-input" id="api-key-input" type="password" placeholder="gsk_..." autocomplete="off">
+    <div class="modal-note">Get a free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> → API Keys</div>
     <button class="btn btn-primary" style="width:100%;padding:10px;font-size:13px" onclick="saveApiKey()">Start Learning →</button>
   </div>
 </div>
@@ -226,7 +226,7 @@
     <div class="view active" id="home-view">
       <div class="home-content">
         <div class="home-title">Learn Python &<br><span>Master AI/ML</span></div>
-        <div class="home-sub">A structured path from Python basics to building production AI/ML systems — with a Gemini AI tutor by your side every step.</div>
+        <div class="home-sub">A structured path from Python basics to building production AI/ML systems — with an AI tutor by your side every step.</div>
         <div class="modules-grid" id="home-modules"></div>
       </div>
     </div>
@@ -295,7 +295,8 @@
 </div>
 
 <script>
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=';
+const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const MODEL = 'llama-3.3-70b-versatile';
 
 const CURRICULUM = [
   { id:'m1', label:'Python Fundamentals', icon:'🐍', tag:'t-blue', desc:'Variables, data types, loops, functions — everything to write Python from scratch.', level:'Beginner',
@@ -335,7 +336,7 @@ let curMod = null, curCh = null, chatHist = [], practiceHist = [];
 
 function saveApiKey() {
   const k = document.getElementById('api-key-input').value.trim();
-  if (k.length < 10) { alert('Please enter a valid Gemini API key'); return; }
+  if (!k.startsWith('gsk_')) { alert('Please enter a valid Groq API key (starts with gsk_)'); return; }
   KEY = k; localStorage.setItem('pypath_key', k);
   document.getElementById('api-modal').style.display = 'none';
   init();
@@ -400,8 +401,8 @@ async function loadChapter(modId, chId) {
   setView('lesson');
   chatHist = [];
   document.getElementById('ai-messages').innerHTML = `<div class="msg ai"><div class="msg-avatar">P</div><div class="msg-bubble">Loading <strong>${ch.title}</strong>... Ask me anything once it's ready! 🐍</div></div>`;
-  document.getElementById('lesson-body').innerHTML = `<div style="display:flex;align-items:center;gap:12px;padding:40px 0;color:var(--text3)"><div class="loading-spinner"></div> Generating lesson with Gemini AI...</div>`;
-  const html = await geminiLesson(mod.label, ch.title);
+  document.getElementById('lesson-body').innerHTML = `<div style="display:flex;align-items:center;gap:12px;padding:40px 0;color:var(--text3)"><div class="loading-spinner"></div> Generating lesson with AI...</div>`;
+  const html = await llmLesson(mod.label, ch.title);
   document.getElementById('lesson-body').innerHTML = html;
   if (!completed.has(chId)) {
     const nxt = getNext(modId,chId);
@@ -431,11 +432,8 @@ function markDone(modId,chId) {
   updateProgress(); buildHome(); buildSidebar();
 }
 
-// --- CONFIGURATION NOTE ---
-// Ensure your GEMINI_URL points to the correct endpoint v1beta or v1.
-// e.g., https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=
-
-async function geminiLesson(modName, chTitle) {
+// --- CONFIGURATION ---
+async function llmLesson(modName, chTitle) {
   const p = `You are an expert Python tutor. Write a thorough, engaging HTML lesson for:
 Module: ${modName} | Chapter: ${chTitle}
 
@@ -450,17 +448,22 @@ Return ONLY HTML content (no doctype/html/head/body tags). Use:
 Include: intro, 2-4 concept cards, 3+ sections with code examples, real-world example, quiz. Wrap all in <div class="lesson-content">.`;
   
   try {
-    const r = await fetch(GEMINI_URL + KEY, { 
+    const r = await fetch(API_URL, { 
       method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${KEY}`
+      }, 
       body: JSON.stringify({
-        contents: [{ parts: [{ text: p }] }],
-        generationConfig: { maxOutputTokens: 3000, temperature: 0.7 }
+        model: MODEL,
+        messages: [{ role: 'user', content: p }],
+        temperature: 0.7,
+        max_tokens: 4096
       }) 
     });
     const d = await r.json();
     if (d.error) throw new Error(d.error.message);
-    return d.candidates[0].content.parts[0].text.replace(/```html\n?/g, '').replace(/```\n?/g, '');
+    return d.choices[0].message.content.replace(/```html\n?/g, '').replace(/```\n?/g, '');
   } catch (e) { 
     return `<div class="lesson-content"><h1>${chTitle}</h1><p style="color:var(--orange)">Error: ${e.message}</p></div>`; 
   }
@@ -496,15 +499,15 @@ async function sendMessage() {
   if (!txt) return;
   inp.value = ''; 
   addMsg('user', txt, 'ai-messages', 'Y'); 
-  chatHist.push({ role: 'user', parts: [{ text: txt }] });
+  chatHist.push({ role: 'user', content: txt });
   
   const t = addTyping('ai-messages');
   const sys = (curCh ? `Student is learning: ${curMod.label} > ${curCh.title}. ` : '') + 'You are PyMentor, a friendly Python/AI tutor. Be clear, helpful, concise.';
   
-  const resp = await geminiChat(sys, chatHist); 
+  const resp = await llmChat(sys, chatHist); 
   t.remove();
   
-  chatHist.push({ role: 'model', parts: [{ text: resp }] }); 
+  chatHist.push({ role: 'assistant', content: resp }); 
   addMsg('ai', resp, 'ai-messages', 'P');
 }
 
@@ -514,45 +517,53 @@ async function sendPracticeMessage() {
   const code = document.getElementById('code-editor').value;
   inp.value = ''; 
   addMsg('user', txt, 'practice-messages', 'Y');
-  practiceHist.push({ role: 'user', parts: [{ text: `Code:\n\`\`\`python\n${code}\n\`\`\`\n\nQuestion: ${txt}` }] });
+  const msgContent = `Code:\n\`\`\`python\n${code}\n\`\`\`\n\nQuestion: ${txt}`;
+  practiceHist.push({ role: 'user', content: msgContent });
   
   const t = addTyping('practice-messages');
-  const resp = await geminiChat('You are a Python coding assistant. Be helpful, concise, educational.', practiceHist); 
+  const resp = await llmChat('You are a Python coding assistant. Be helpful, concise, educational.', practiceHist); 
   t.remove();
   
-  practiceHist.push({ role: 'model', parts: [{ text: resp }] }); 
+  practiceHist.push({ role: 'assistant', content: resp }); 
   addMsg('ai', resp, 'practice-messages', 'P');
 }
 
-// FIX: Extracted System Prompt from history stream to prevent exponential token bloat
-async function geminiChat(sys, hist, responseType = "text") {
+async function llmChat(sys, hist, responseType = "text") {
+  // Truncate history to avoid accumulation issues (last 10 messages)
+  if (hist.length > 10) hist = hist.slice(-10);
+  
   try {
+    const messages = [
+      { role: "system", content: sys },
+      ...hist
+    ];
+
     const bodyData = {
-      contents: hist, // Keeps history clean of repeating system data
-      systemInstruction: {
-        parts: [{ text: sys }]
-      },
-      generationConfig: {
-        maxOutputTokens: 700,
-        temperature: responseType === "json" ? 0.2 : 0.8 // Lower temp for exact JSON processing
-      }
+      model: MODEL,
+      messages: messages,
+      temperature: responseType === "json" ? 0.1 : 0.7,
+      max_tokens: 1024
     };
 
-    // If requesting strict structural data, tell the model natively
     if (responseType === "json") {
-      bodyData.generationConfig.responseMimeType = "application/json";
+      bodyData.response_format = { type: "json_object" };
     }
 
-    const r = await fetch(GEMINI_URL + KEY, {
+    const r = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${KEY}`
+      },
       body: JSON.stringify(bodyData)
     });
     
     const d = await r.json(); 
     if (d.error) return 'Error: ' + d.error.message;
-    return d.candidates[0].content.parts[0].text;
+    if (!d.choices || !d.choices[0]) return 'Error: No response from AI';
+    return d.choices[0].message.content;
   } catch (e) {
+    console.error('LLM Chat Error:', e);
     return 'Error: ' + e.message;
   }
 }
@@ -562,8 +573,7 @@ async function generateQuiz() {
   const t = addTyping('ai-messages');
   const p = `Generate a quiz question about "${curCh.title}" in Python. Return ONLY valid JSON matching this schema: {"question":"...","options":["...","...","...","..."],"correct":INDEX}`;
   
-  // FIX: Passing "json" flag to activate responseMimeType handling
-  const resp = await geminiChat('You are a Python quiz generator outputting strict structured data.', [{ role: 'user', parts: [{ text: p }] }], "json"); 
+  const resp = await llmChat('You are a Python quiz generator outputting strict structured data.', [{ role: 'user', content: p }], "json"); 
   t.remove();
   
   try {
@@ -598,7 +608,7 @@ window.checkQMsg = (btn, correct) => {
 async function addHints() {
   if (!curCh) { addMsg('ai', 'Load a chapter first!', 'ai-messages', 'P'); return; }
   const t = addTyping('ai-messages');
-  const resp = await geminiChat('You are PyMentor.', [{ role: 'user', parts: [{ text: `Give 3 practical tips and common pitfalls for "${curCh.title}" in Python. Be concise.` }] }]);
+  const resp = await llmChat('You are PyMentor.', [{ role: 'user', content: `Give 3 practical tips and common pitfalls for "${curCh.title}" in Python. Be concise.` }]);
   t.remove(); 
   addMsg('ai', '💡 Tips for ' + curCh.title + ':\n\n' + resp, 'ai-messages', 'P');
 }
@@ -606,7 +616,7 @@ async function addHints() {
 async function getChallenge() {
   const ctx = curCh ? `${curMod.label} > ${curCh.title}` : 'General Python';
   const t = addTyping('practice-messages');
-  const resp = await geminiChat('You are a coding challenge generator.', [{ role: 'user', parts: [{ text: `Create a Python coding challenge for: ${ctx}. Include problem statement, example, and starter code template.` }] }]);
+  const resp = await llmChat('You are a coding challenge generator.', [{ role: 'user', content: `Create a Python coding challenge for: ${ctx}. Include problem statement, example, and starter code template.` }]);
   t.remove(); 
   addMsg('ai', resp, 'practice-messages', 'P');
   document.getElementById('code-editor').value = '# Challenge — see the description on the right\n# Write your solution below:\n\n';
@@ -616,7 +626,7 @@ async function aiReviewCode() {
   const code = document.getElementById('code-editor').value.trim();
   if (!code) { addMsg('ai', 'Write some code first!', 'practice-messages', 'P'); return; }
   const t = addTyping('practice-messages');
-  const resp = await geminiChat('You are an expert Python code reviewer.', [{ role: 'user', parts: [{ text: `Review this Python code:\n\`\`\`python\n${code}\n\`\`\`\nCover: what it does, issues, improvements, rating/10.` }] }]);
+  const resp = await llmChat('You are an expert Python code reviewer.', [{ role: 'user', content: `Review this Python code:\n\`\`\`python\n${code}\n\`\`\`\nCover: what it does, issues, improvements, rating/10.` }]);
   t.remove(); 
   addMsg('ai', resp, 'practice-messages', 'P');
 }
@@ -659,6 +669,11 @@ function addTyping(cid) {
 window.onload = () => {
   const saved=localStorage.getItem('pypath_key');
   if(saved){KEY=saved;document.getElementById('api-modal').style.display='none';init();}
+};
+</script>
+</body>
+</html>
+';init();}
 };
 </script>
 </body>
