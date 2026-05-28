@@ -8,6 +8,11 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon.svg">
 <style>
   .CodeMirror { flex: 1; height: auto; font-family: var(--mono); font-size: 13px; background: transparent !important; }
   .CodeMirror-gutters { background: var(--bg2); border-right: 1px solid var(--border); }
@@ -68,8 +73,12 @@
           <button class="btn" onclick="getChallenge()" style="padding:5px 12px;font-size:11.5px">🎯 Challenge</button>
         </div>
         <textarea id="code-editor" spellcheck="false" placeholder="# Write your Python code here&#10;# Click 'Challenge' for an AI exercise!&#10;&#10;print('Hello, PyPath! 🐍')"></textarea>
-        <div class="output-area">
-          <div class="output-header"><div class="out-dot" id="out-dot" style="background:var(--text3)"></div>Output</div>
+        <div class="output-area" id="output-area">
+          <div class="output-header" onclick="toggleOutput()">
+            <div class="out-dot" id="out-dot" style="background:var(--text3)"></div>
+            Output
+            <span class="out-toggle">▼</span>
+          </div>
           <div id="output-text">Run your code to see output here.</div>
         </div>
       </div>
@@ -94,6 +103,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

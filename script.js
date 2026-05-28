@@ -35,15 +35,35 @@ const CURRICULUM = [
 ];
 
 let KEY = '', completed = new Set(JSON.parse(localStorage.getItem('pypath_done')||'[]'));
-let curMod = null, curCh = null, chatHist = [], practiceHist = [], editor = null;
+let curMod = null, curCh = null, chatHist = [], practiceHist = [], editor = null, pyodide = null;
 
 function saveApiKey() {
-  const k = document.getElementById('api-key-input').value.trim();
-  if (!k.startsWith('gsk_')) { alert('Please enter a valid Groq API key (starts with gsk_)'); return; }
-  KEY = k; localStorage.setItem('pypath_key', k);
-  document.getElementById('api-modal').style.display = 'none';
+  const input = document.getElementById('api-key-input');
+  if (!input) return;
+  const k = input.value.trim();
+  if (!k.startsWith('gsk_')) { 
+    alert('Please enter a valid Groq API key (starts with gsk_)'); 
+    return; 
+  }
+  
+  KEY = k; 
+  localStorage.setItem('pypath_key', k);
+  
+  const m = document.getElementById('api-modal');
+  if (m) m.style.display = 'none';
+  
   init();
 }
+
+// Add Enter key support for API modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const modal = document.getElementById('api-modal');
+    if (modal && modal.style.display !== 'none') {
+      saveApiKey();
+    }
+  }
+});
 
 function init() {
   buildSidebar();
@@ -375,41 +395,49 @@ async function aiReviewCode() {
   t.remove(); 
   addMsg('ai', resp, 'practice-messages', 'P');
 }
+function toggleOutput() {
+  const el = document.getElementById('output-area');
+  if (el) el.classList.toggle('collapsed');
+}
 
-function runCode() {
+async function runCode() {
   const code = editor ? editor.getValue() : document.getElementById('code-editor').value;
-  const out = [], outEl = document.getElementById('output-text'), dot = document.getElementById('out-dot');
-  
-  try {
-    // Basic Python-to-JS translation for simple logic
-    let js = code
-      .replace(/print\(([^)]+)\)/g, '__o.log($1)')
-      .replace(/True/g, 'true')
-      .replace(/False/g, 'false')
-      .replace(/None/g, 'null')
-      .replace(/elif/g, 'else if')
-      .replace(/#.*/g, ''); // Remove comments
+  const outEl = document.getElementById('output-text'), dot = document.getElementById('out-dot'), area = document.getElementById('output-area');
 
-    const runner = new Function('__o', js);
-    runner({ 
-      log: (...a) => {
-        const str = a.map(x => {
-          if (x === null) return 'None';
-          if (x === true) return 'True';
-          if (x === false) return 'False';
-          return typeof x === 'object' ? JSON.stringify(x) : x;
-        }).join(' ');
-        out.push(str);
-      } 
-    });
+  if (area) area.classList.remove('collapsed'); // Open on run
+
+  if (!pyodide) {
+...
+    outEl.textContent = '🚀 Loading Python Engine (Pyodide)...';
+    outEl.style.color = 'var(--accent)';
+    try {
+      pyodide = await loadPyodide();
+      outEl.textContent = '✅ Python Engine Ready!\n';
+    } catch (err) {
+      outEl.textContent = '❌ Failed to load Pyodide: ' + err.message;
+      outEl.style.color = 'var(--orange)';
+      return;
+    }
+  }
+
+  outEl.textContent = 'Running...';
+  outEl.style.color = 'var(--text)';
+  let output = '';
+
+  try {
+    // Redirect stdout to capture print statements
+    pyodide.setStdout({ batched: (str) => { output += str + '\n'; } });
+    pyodide.setStderr({ batched: (str) => { output += str + '\n'; } });
+
+    await pyodide.runPythonAsync(code);
     
-    outEl.textContent = out.length ? out.join('\n') : '(no output)'; 
-    outEl.style.color = 'var(--green)'; 
+    outEl.textContent = output || '(no output)';
+    outEl.style.color = 'var(--green)';
     dot.style.background = 'var(--green)';
   } catch (e) {
-    outEl.style.color = 'var(--orange)'; 
+    outEl.style.color = 'var(--orange)';
     dot.style.background = 'var(--orange)';
-    outEl.textContent = 'Execution Error: ' + e.message + '\n\nNote: Browser runner is limited (simple logic only).\nUse "Review" for expert AI feedback on your code!';
+    outEl.textContent = output + '\n❌ Python Error:\n' + e.message;
   }
 }
 
@@ -438,4 +466,11 @@ window.onload = () => {
     if (m) m.style.display = 'flex';
   }
   init();
+
+  // Register Service Worker for PWA
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
+    });
+  }
 };
