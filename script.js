@@ -407,7 +407,6 @@ async function runCode() {
   if (area) area.classList.remove('collapsed'); // Open on run
 
   if (!pyodide) {
-...
     outEl.textContent = '🚀 Loading Python Engine (Pyodide)...';
     outEl.style.color = 'var(--accent)';
     try {
