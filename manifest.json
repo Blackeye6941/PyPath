@@ -1,0 +1,17 @@
+{
+  "name": "PyPath — Python to AI/ML Mastery",
+  "short_name": "PyPath",
+  "description": "A structured path from Python basics to building production AI/ML systems.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#1f6feb",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
