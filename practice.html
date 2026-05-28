@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PyPath — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- API MODAL -->
+<div id="api-modal">
+  <div class="modal-box">
+    <div style="font-size:26px;margin-bottom:10px">🔑</div>
+    <div class="modal-title">Enter your Groq API Key</div>
+    <div class="modal-sub">PyPath uses Groq to generate personalized lessons and answer your questions. Your key stays in your browser only.</div>
+    <input class="modal-input" id="api-key-input" type="password" placeholder="gsk_..." autocomplete="off">
+    <div class="modal-note">Get a free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> → API Keys</div>
+    <button class="btn btn-primary" style="width:100%;padding:10px;font-size:13px" onclick="saveApiKey()">Start Learning →</button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon" onclick="showHome()" style="cursor:pointer">Py</div>
+      <div onclick="showHome()" style="cursor:pointer"><div class="logo-text">PyPath</div><div class="logo-sub">python → ai/ml mastery</div></div>
+    </div>
+  </div>
+  <div class="sidebar-progress">
+    <div class="progress-label">Your Progress</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="progress-stat"><span id="prog-done">0 chapters</span><span id="prog-pct">0%</span></div>
+  </div>
+  <div class="sidebar-modules" id="sidebar-modules"></div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-breadcrumb">
+      <div class="tb-module" id="tb-module">Practice Area</div>
+      <div class="tb-chapter" id="tb-chapter">Free Coding</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="showHome()">🏠 Home</button>
+      <button class="btn btn-green" onclick="showPractice()">⚡ Practice</button>
+    </div>
+  </div>
+
+  <div id="content-area">
+    <!-- PRACTICE VIEW -->
+    <div class="view active" id="practice-view" style="flex-direction:row">
+      <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid var(--border)">
+        <div class="editor-header">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">python</span>
+          <span style="flex:1;font-size:12.5px;color:var(--text2)" id="practice-title">Free Practice</span>
+          <button class="btn btn-primary" onclick="runCode()" style="padding:5px 12px;font-size:11.5px">▶ Run</button>
+          <button class="btn" onclick="aiReviewCode()" style="padding:5px 12px;font-size:11.5px">🤖 Review</button>
+          <button class="btn" onclick="getChallenge()" style="padding:5px 12px;font-size:11.5px">🎯 Challenge</button>
+        </div>
+        <textarea id="code-editor" spellcheck="false" placeholder="# Write your Python code here&#10;# Click 'Challenge' for an AI exercise!&#10;&#10;print('Hello, PyPath! 🐍')"></textarea>
+        <div class="output-area">
+          <div class="output-header"><div class="out-dot" id="out-dot" style="background:var(--text3)"></div>Output</div>
+          <div id="output-text">Run your code to see output here.</div>
+        </div>
+      </div>
+      <div style="width:320px;min-width:320px;background:var(--bg2);display:flex;flex-direction:column">
+        <div class="ai-panel-header">
+          <div class="ai-avatar">⚡</div>
+          <div><div class="ai-name">Code Assistant</div><div class="ai-status">● Ready</div></div>
+        </div>
+        <div id="practice-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+          <div class="msg ai"><div class="msg-avatar">P</div><div class="msg-bubble">Welcome to the practice area! Click <strong>Challenge</strong> for an AI-generated exercise, or paste code and click <strong>Review</strong> for feedback.</div></div>
+        </div>
+        <div style="padding:10px;border-top:1px solid var(--border)">
+          <div class="ai-input-wrap">
+            <textarea id="practice-input" placeholder="Ask about your code..." rows="1" style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:7px 11px;font-family:var(--font);font-size:12.5px;color:var(--text);resize:none;min-height:34px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPracticeMessage()}"></textarea>
+            <button class="send-btn" onclick="sendPracticeMessage()">↑</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PyPath — Home</title>
+<title>PyPath — Lesson</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -41,8 +41,8 @@
 <div id="main">
   <div class="topbar">
     <div class="topbar-breadcrumb">
-      <div class="tb-module" id="tb-module">Welcome</div>
-      <div class="tb-chapter" id="tb-chapter">Python to AI/ML Mastery</div>
+      <div class="tb-module" id="tb-module">Module</div>
+      <div class="tb-chapter" id="tb-chapter">Chapter</div>
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn" onclick="showHome()">🏠 Home</button>
@@ -51,12 +51,30 @@
   </div>
 
   <div id="content-area">
-    <!-- HOME VIEW -->
-    <div class="view active" id="home-view">
-      <div class="home-content">
-        <div class="home-title">Learn Python &<br><span>Master AI/ML</span></div>
-        <div class="home-sub">A structured path from Python basics to building production AI/ML systems — with an AI tutor by your side every step.</div>
-        <div class="modules-grid" id="home-modules"></div>
+    <!-- LESSON VIEW -->
+    <div class="view active" id="lesson-view" style="flex-direction:row">
+      <div id="lesson-panel">
+        <div class="lesson-content" id="lesson-body"><div style="display:flex;align-items:center;gap:12px;padding:40px 0;color:var(--text3)"><div class="loading-spinner"></div> Loading lesson...</div></div>
+      </div>
+      <div id="ai-panel">
+        <div class="ai-panel-header">
+          <div class="ai-avatar">🤖</div>
+          <div><div class="ai-name">PyMentor AI</div><div class="ai-status">● Online</div></div>
+        </div>
+        <div id="ai-tab-bar">
+          <div class="ai-tab active" onclick="setAiTab(this,'ask')">Ask AI</div>
+          <div class="ai-tab" onclick="setAiTab(this,'quiz')">Quiz</div>
+          <div class="ai-tab" onclick="setAiTab(this,'hints')">Hints</div>
+        </div>
+        <div id="ai-messages">
+          <div class="msg ai"><div class="msg-avatar">P</div><div class="msg-bubble">Hi! I'm PyMentor. Ask me anything about the current lesson! 🐍</div></div>
+        </div>
+        <div id="ai-input-area">
+          <div class="ai-input-wrap">
+            <textarea id="ai-input" placeholder="Ask about this lesson..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+            <button class="send-btn" onclick="sendMessage()">↑</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
