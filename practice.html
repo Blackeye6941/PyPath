@@ -5,7 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PyPath — Practice</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
 <link rel="stylesheet" href="style.css">
+<style>
+  .CodeMirror { flex: 1; height: auto; font-family: var(--mono); font-size: 13px; background: transparent !important; }
+  .CodeMirror-gutters { background: var(--bg2); border-right: 1px solid var(--border); }
+</style>
 </head>
 <body>
 
@@ -86,6 +92,8 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

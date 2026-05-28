@@ -35,7 +35,7 @@ const CURRICULUM = [
 ];
 
 let KEY = '', completed = new Set(JSON.parse(localStorage.getItem('pypath_done')||'[]'));
-let curMod = null, curCh = null, chatHist = [], practiceHist = [];
+let curMod = null, curCh = null, chatHist = [], practiceHist = [], editor = null;
 
 function saveApiKey() {
   const k = document.getElementById('api-key-input').value.trim();
@@ -61,10 +61,25 @@ function init() {
       showHome();
     }
   } else if (path.includes('practice.html')) {
+    initEditor();
     showPractice();
   } else {
     buildHome();
   }
+}
+
+function initEditor() {
+  const ta = document.getElementById('code-editor');
+  if (!ta || editor) return;
+  editor = CodeMirror.fromTextArea(ta, {
+    mode: 'python',
+    theme: 'dracula',
+    lineNumbers: true,
+    indentUnit: 4,
+    autoCloseBrackets: true,
+    matchBrackets: true,
+    extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess" }
+  });
 }
 
 function buildSidebar() {
@@ -267,7 +282,7 @@ async function sendMessage() {
 async function sendPracticeMessage() {
   const inp = document.getElementById('practice-input'), txt = inp.value.trim(); 
   if (!txt) return;
-  const code = document.getElementById('code-editor').value;
+  const code = editor ? editor.getValue() : document.getElementById('code-editor').value;
   inp.value = ''; 
   addMsg('user', txt, 'practice-messages', 'Y');
   const msgContent = `Code:\n\`\`\`python\n${code}\n\`\`\`\n\nQuestion: ${txt}`;
@@ -347,28 +362,54 @@ async function getChallenge() {
   const resp = await llmChat('You are a coding challenge generator.', [{ role: 'user', content: `Create a Python coding challenge for: ${ctx}. Include problem statement, example, and starter code template.` }]);
   t.remove(); 
   addMsg('ai', resp, 'practice-messages', 'P');
-  document.getElementById('code-editor').value = '# Challenge — see the description on the right\n# Write your solution below:\n\n';
+  const starter = '# Challenge — see the description on the right\n# Write your solution below:\n\n';
+  if (editor) editor.setValue(starter);
+  else document.getElementById('code-editor').value = starter;
 }
 
 async function aiReviewCode() {
-  const code = document.getElementById('code-editor').value.trim();
+  const code = (editor ? editor.getValue() : document.getElementById('code-editor').value).trim();
   if (!code) { addMsg('ai', 'Write some code first!', 'practice-messages', 'P'); return; }
   const t = addTyping('practice-messages');
-  const resp = await llmChat('You are an expert Python code reviewer.', [{ role: 'user', content: `Review this Python code:\n\`\`\`python\n${code}\n\`\`\`\nCover: what it does, issues, improvements, rating/10.` }]);
+  const resp = await llmChat('You are a supportive, expert Python tutor.', [{ role: 'user', content: `Review this code like a real tutor would in under 100 words:\n\`\`\`python\n${code}\n\`\`\`\nSpeak naturally, avoid bullet points, and focus on the most important feedback. Keep it around 100 words.` }]);
   t.remove(); 
   addMsg('ai', resp, 'practice-messages', 'P');
 }
 
 function runCode() {
-  const code = document.getElementById('code-editor').value, out = [], outEl = document.getElementById('output-text'), dot = document.getElementById('out-dot');
+  const code = editor ? editor.getValue() : document.getElementById('code-editor').value;
+  const out = [], outEl = document.getElementById('output-text'), dot = document.getElementById('out-dot');
+  
   try {
-    let js = code.replace(/print\(([^)]+)\)/g, '__o.log($1)').replace(/True/g, 'true').replace(/False/g, 'false').replace(/None/g, 'null');
-    new Function('__o', js)({ log: (...a) => out.push(a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' ')) });
+    // Basic Python-to-JS translation for simple logic
+    let js = code
+      .replace(/print\(([^)]+)\)/g, '__o.log($1)')
+      .replace(/True/g, 'true')
+      .replace(/False/g, 'false')
+      .replace(/None/g, 'null')
+      .replace(/elif/g, 'else if')
+      .replace(/#.*/g, ''); // Remove comments
+
+    const runner = new Function('__o', js);
+    runner({ 
+      log: (...a) => {
+        const str = a.map(x => {
+          if (x === null) return 'None';
+          if (x === true) return 'True';
+          if (x === false) return 'False';
+          return typeof x === 'object' ? JSON.stringify(x) : x;
+        }).join(' ');
+        out.push(str);
+      } 
+    });
+    
     outEl.textContent = out.length ? out.join('\n') : '(no output)'; 
-    outEl.style.color = 'var(--green)'; dot.style.background = 'var(--green)';
+    outEl.style.color = 'var(--green)'; 
+    dot.style.background = 'var(--green)';
   } catch (e) {
-    outEl.style.color = 'var(--orange)'; dot.style.background = 'var(--orange)';
-    outEl.textContent = 'Browser Python runner is limited.\n\nUse "Review" for AI code feedback!';
+    outEl.style.color = 'var(--orange)'; 
+    dot.style.background = 'var(--orange)';
+    outEl.textContent = 'Execution Error: ' + e.message + '\n\nNote: Browser runner is limited (simple logic only).\nUse "Review" for expert AI feedback on your code!';
   }
 }
 
